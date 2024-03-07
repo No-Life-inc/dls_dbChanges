@@ -1,0 +1,25 @@
+{
+  "name": "dls_dbchanges",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/No-Life-inc/dls_dbChanges.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/No-Life-inc/dls_dbChanges/issues"
+  },
+  "homepage": "https://github.com/No-Life-inc/dls_dbChanges#readme",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "mongodb": "^6.4.0"
+  }
+}
