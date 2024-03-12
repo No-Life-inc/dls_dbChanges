@@ -1,14 +1,18 @@
 import pika
+from dotenv import load_dotenv
 from pymongo import MongoClient
 import json
 
+# Load environment variables from .env file
+env_vars = load_dotenv(override=True)
+
 # RabbitMQ connection parameters
-RABBITMQ_URL = 'amqp://user:password@localhost/%2F'
+RABBITMQ_URL = f"amqp://{env_vars['RABBITUSER']}:{env_vars['RABBITPW']}@{env_vars['RABBITURL']}/%2F"
 RABBITMQ_QUEUE = 'new_stories'
 
 # MongoDB connection parameters
-MONGODB_URL = 'mongodb://admin:Passw0rd!@localhost:27017/admin'
-MONGODB_DB = 'frontend_backend_db'
+MONGODB_URL = f"mongodb://{env_vars['MONGOUSER']}:{env_vars['MONGOPW']}{env_vars['MONGOURL']}"
+MONGODB_DB = {env_vars['MONGODB']}
 MONGODB_COLLECTION = 'stories'
 
 # Connect to MongoDB
