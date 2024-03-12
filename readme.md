@@ -17,13 +17,13 @@ given the size of the repo, only subscriber.py are in use at the moment.
 
 Create a .env in the root folder.
 
-- MONGOUSER: admin
-- MONGOPW: Passw0rd!
-- MONGOURL: @localhost:27017/admin
-- MONGODB: frontend_backend_db
-- RABBITUSER: user
-- RABBITPW: password
-- RABBITURL: localhost
+- MONGOUSER=admin
+- MONGOPW=Passw0rd!
+- MONGOURL=@localhost:27017/admin
+- MONGODB=frontend_backend_db
+- RABBITUSER=user
+- RABBITPW=password
+- RABBITURL=localhost
 
 ## How To Run
 
