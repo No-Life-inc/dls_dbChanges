@@ -48,6 +48,7 @@ def story_callback(ch, method, properties, body):
     # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
+
 # Define the callback function for updating story info
 def update_story_info_callback(ch, method, properties, body):
     print("Received story update:", body)
@@ -55,7 +56,7 @@ def update_story_info_callback(ch, method, properties, body):
 
     # Update the story in MongoDB
     story_collection.update_one(
-        {'storyGuid': story_update['storyGuid']}, 
+        {'storyGuid': story_update['storyGuid']},
         {'$set': {'storyInfo': story_update['storyInfo']}}
     )
     print("Story info updated in MongoDB")
@@ -68,8 +69,12 @@ def update_story_info_callback(ch, method, properties, body):
 def comment_callback(ch, method, properties, body):
     print("Received comment:", body)
     comment = json.loads(body)
-    comment_collection.insert_one(comment)
-    print("Comment inserted into MongoDB")
+
+    story_collection.update_one(
+        {'storyGuid': comment['storyGuid']},
+        {'$push': {'comments': comment}}
+    )
+    print("Story comment updated in MongoDB")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
