@@ -71,9 +71,14 @@ def comment_callback(ch, method, properties, body):
     comment = json.loads(body)
 
     story_collection.update_one(
-        {'storyGuid': comment['storyGuid']},
-        {'$push': {'comments': comment}}
-    )
+    {'storyGuid': comment.get('storyGuid')},
+    {'$push': {'comments': {
+        'commentGuid': comment.get('commentGuid'),
+        'createdAt': comment.get('createdAt'),
+        'commentInfos': comment.get('commentInfos'),
+        'user': comment.get('user')
+    }}}
+)
     print("Story comment updated in MongoDB")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
