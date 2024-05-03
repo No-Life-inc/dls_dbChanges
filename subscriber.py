@@ -13,6 +13,7 @@ RABBITMQ_URL = f"amqp://{os.getenv('RABBITUSER')}:{os.getenv('RABBITPW')}@{os.ge
 RABBITMQ_NEW_STORIES_QUEUE = 'new_stories'
 RABBITMQ_UPDATE_STORY_QUEUE = 'update_story_info'
 RABBITMQ_COMMENTS_QUEUE = 'new_comments'
+RABBITMQ_DELETE_QUEUE = 'delete_story'
 
 # MongoDB connection parameters
 MONGODB_URL = f"mongodb://{os.getenv('MONGOUSER')}:{os.getenv('MONGOPW')}{os.getenv('MONGOURL')}"
@@ -34,7 +35,7 @@ channel = connection.channel()
 channel.queue_declare(queue=RABBITMQ_NEW_STORIES_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_COMMENTS_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_UPDATE_STORY_QUEUE, durable=True)
-
+channel.queue_declare(queue=RABBITMQ_DELETE_QUEUE, durable=True)
 
 # Define the callback function
 def story_callback(ch, method, properties, body):
@@ -82,10 +83,22 @@ def comment_callback(ch, method, properties, body):
     print("Story comment updated in MongoDB")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
+def delete_story_callback(ch, method, properties, body):
+    print("Received delete request:", body)
+    story_guid = body.decode().strip('"') # decode the byte string to a normal string
+
+    # Delete the story from MongoDB
+    result = story_collection.delete_one({'storyGuid': story_guid})
+    print(f"Story {story_guid} deleted from MongoDB, deleted count: {result.deleted_count}")
+
+    # Acknowledge the message
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 # Start consuming messages
 channel.basic_consume(queue=RABBITMQ_NEW_STORIES_QUEUE, on_message_callback=story_callback)
 channel.basic_consume(queue=RABBITMQ_COMMENTS_QUEUE, on_message_callback=comment_callback)
 channel.basic_consume(queue=RABBITMQ_UPDATE_STORY_QUEUE, on_message_callback=update_story_info_callback)
+channel.basic_consume(queue=RABBITMQ_DELETE_QUEUE, on_message_callback=delete_story_callback)
 print('Waiting for new published content...')
 channel.start_consuming()

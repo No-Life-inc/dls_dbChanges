@@ -4,6 +4,7 @@ import { MongoClient } from 'mongodb';
 // RabbitMQ connection parameters
 const RABBITMQ_URL = 'amqp://user:password@localhost';
 const RABBITMQ_QUEUE = 'new_stories';
+const RABBITMQ_DELETE_QUEUE = 'delete_story';
 
 // MongoDB connection parameters
 const MONGODB_URL = 'mongodb://admin:Passw0rd!@localhost:27017';
@@ -38,11 +39,11 @@ MongoClient.connect(MONGODB_URL, (error2, client) => {
   
         channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
         console.log('Waiting for new stories...');
-  
+        
         // Consume messages from the queue
         channel.consume(RABBITMQ_QUEUE, (msg) => {
           console.log('Received:', msg.content.toString());
-  
+          
           // Insert the message into MongoDB
           const story = JSON.parse(msg.content.toString());
           collection.insertOne(story, (error3, result) => {
@@ -50,9 +51,31 @@ MongoClient.connect(MONGODB_URL, (error2, client) => {
               console.error('Failed to insert story into MongoDB:', error3);
               throw error3;
             }
-  
+            
             console.log('Story inserted into MongoDB:', result.insertedId);
-  
+            
+            // Acknowledge the message
+            channel.ack(msg);
+          });
+        }, { noAck: false });
+        
+        channel.assertQueue(RABBITMQ_DELETE_QUEUE, { durable: true });
+        console.log('Waiting for delete operations...'); 
+
+        // Consume messages from the delete queue
+        channel.consume(RABBITMQ_DELETE_QUEUE, (msg) => {
+          console.log('Received:', msg.content.toString());
+          
+          // Delete the story from MongoDB
+          const storyGuid = msg.content.toString();
+          collection.deleteOne({ storyGuid: storyGuid }, (error3, result) => {
+            if (error3) {
+              console.error('Failed to delete story from MongoDB:', error3);
+              throw error3;
+            }
+
+            console.log('Story deleted from MongoDB:', result.deletedCount);
+
             // Acknowledge the message
             channel.ack(msg);
           });
