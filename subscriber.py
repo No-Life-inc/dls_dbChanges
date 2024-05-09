@@ -12,6 +12,7 @@ print(os.getenv('RABBITUSER'))
 RABBITMQ_URL = f"amqp://{os.getenv('RABBITUSER')}:{os.getenv('RABBITPW')}@{os.getenv('RABBITURL')}/%2F"
 RABBITMQ_NEW_STORIES_QUEUE = 'new_stories'
 RABBITMQ_UPDATE_STORY_QUEUE = 'update_story_info'
+RABBITMQ_UPDATE_COMMENT_QUEUE = 'update_comment_info'
 RABBITMQ_NEW_COMMENTS_QUEUE = 'new_comments'
 RABBITMQ_DELETE_QUEUE = 'delete_story'
 RABBITMQ_DELETE_COMMENT_QUEUE = 'delete_comment'
@@ -37,6 +38,7 @@ channel = connection.channel()
 channel.queue_declare(queue=RABBITMQ_NEW_STORIES_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_NEW_COMMENTS_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_UPDATE_STORY_QUEUE, durable=True)
+channel.queue_declare(queue=RABBITMQ_UPDATE_COMMENT_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_DELETE_QUEUE, durable=True)
 channel.queue_declare(queue=RABBITMQ_DELETE_COMMENT_QUEUE, durable=True)
 
@@ -68,6 +70,20 @@ def update_story_info_callback(ch, method, properties, body):
     # Acknowledge the message
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
+
+def update_comment_info_callback(ch, method, properties, body):
+    print("Received comment update:", body)
+    comment_update = json.loads(body)
+
+ 
+    comment_collection.update_one(
+        {'commentGuid': comment_update['commentGuid']},
+        {'$set': {'commentInfo': comment_update['commentInfo']}}
+    )
+    print("Comment info updated in MongoDB")
+
+
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 # Define the callback function for comments
 def comment_callback(ch, method, properties, body):
@@ -129,6 +145,7 @@ def delete_comment_callback(ch, method, properties, body):
 channel.basic_consume(queue=RABBITMQ_NEW_STORIES_QUEUE, on_message_callback=story_callback)
 channel.basic_consume(queue=RABBITMQ_NEW_COMMENTS_QUEUE, on_message_callback=comment_callback)
 channel.basic_consume(queue=RABBITMQ_UPDATE_STORY_QUEUE, on_message_callback=update_story_info_callback)
+channel.basic_consume(RABBITMQ_UPDATE_COMMENT_QUEUE, on_message_callback=update_comment_info_callback)
 channel.basic_consume(queue=RABBITMQ_DELETE_QUEUE, on_message_callback=delete_story_callback)
 channel.basic_consume(queue=RABBITMQ_DELETE_COMMENT_QUEUE, on_message_callback=delete_comment_callback)
 print('Waiting for new published content...')
