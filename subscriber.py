@@ -75,13 +75,20 @@ def update_comment_info_callback(ch, method, properties, body):
     print("Received comment update:", body)
     comment_update = json.loads(body)
 
- 
-    comment_collection.update_one(
-        {'commentGuid': comment_update['commentGuid']},
-        {'$set': {'commentInfo': comment_update['commentInfo']}}
-    )
-    print("Comment info updated in MongoDB")
+    try:
+        # Update the comment in MongoDB
+        result = story_collection.update_one(
+            {'comments': {'$elemMatch': {'commentGuid': comment_update['commentGuid']}}},
+            {'$set': {'comments.$.commentInfo': comment_update['commentInfo']}}
+        )
+        print("Matched documents:", result.matched_count)
+        print("Modified documents:", result.modified_count)
+        
+        if result.matched_count == 0:
+            print("No matching document found in MongoDB")
 
+    except Exception as e:
+        print("Error updating comment info in MongoDB:", e)
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -145,7 +152,7 @@ def delete_comment_callback(ch, method, properties, body):
 channel.basic_consume(queue=RABBITMQ_NEW_STORIES_QUEUE, on_message_callback=story_callback)
 channel.basic_consume(queue=RABBITMQ_NEW_COMMENTS_QUEUE, on_message_callback=comment_callback)
 channel.basic_consume(queue=RABBITMQ_UPDATE_STORY_QUEUE, on_message_callback=update_story_info_callback)
-channel.basic_consume(RABBITMQ_UPDATE_COMMENT_QUEUE, on_message_callback=update_comment_info_callback)
+channel.basic_consume(queue=RABBITMQ_UPDATE_COMMENT_QUEUE, on_message_callback=update_comment_info_callback)
 channel.basic_consume(queue=RABBITMQ_DELETE_QUEUE, on_message_callback=delete_story_callback)
 channel.basic_consume(queue=RABBITMQ_DELETE_COMMENT_QUEUE, on_message_callback=delete_comment_callback)
 print('Waiting for new published content...')
